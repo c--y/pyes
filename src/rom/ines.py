@@ -9,6 +9,14 @@ class INesObj(object):
     pass
 
 
+class _HeaderOption(object):
+
+    def __init__(self):
+        self.prg_size = 0
+        self.chr_size = 0
+        self.prg_8k_size = 0
+
+
 def _parse_header(bytes):
     magic = bytes[:3]
     if not util.eq_seq(magic, HEADER_MAGIC):
