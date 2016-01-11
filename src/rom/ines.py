@@ -2,6 +2,7 @@
 import ctypes
 from util import bit, bit_all, bits_to_int, bit_range, eq_seq, u8
 
+
 HEADER_MAGIC = (0x4e, 0x45, 0x53)
 
 

@@ -5,18 +5,17 @@
 """
 import functools
 import types
-from util import u8, u16, u8n, u16n, set_bit, bit
+from util import u8, u16, u8n, u16n, set_bit, bit, make_u16
 
 
 class Cpu(object):
 
     def __init__(self, machine):
-
         # machine
         self.machine = machine
 
-        # shortcut
-        self._m = self.machine.memory
+        # cycles
+        self.cycles = 0
 
         # program counter
         self.pc = u16()
@@ -49,32 +48,67 @@ class Cpu(object):
         for k, v in p_bit_map.iteritems():
             self.__dict__[k] = types.MethodType(functools.partial(Cpu._p_test, i=v), self)
             self.__dict__['set_' + k] = types.MethodType(functools.partial(Cpu._p_set, i=v), self)
-            self.__dict__['clear_' + k] = types.MethodType(functools.partial(Cpu._p_clear, i=v), self)
-
 
     @staticmethod
     def _p_test(obj, i=0):
         return bit(obj.p.value, i)
 
     @staticmethod
-    def _p_set(obj, i=0):
-        obj.p.value = set_bit(obj.p.value, i, True)
+    def _p_set(obj, v, i=0):
+        obj.p.value = set_bit(obj.p.value, i, v)
 
-    @staticmethod
-    def _p_clear(obj, i=0):
-        obj.p.value = set_bit(obj.p.value, i, False)
+    def test_and_set_zero(self, v):
+        self.set_zero(v == 0)
+
+    def test_and_set_negative(self, v):
+        self.set_negative((v & 0x80) > 0)
+
+    def test_and_set_carry_plus(self, v):
+        self.set_carry(v > 0xff)
+
+    # if v < 0, clear the carry bit.
+    def test_and_set_carry_minus(self, v):
+        self.set_carry(v >= 0x00)
+
+    def test_and_set_overflow(self, v):
+        self.set_overflow((v & 0x40) > 0)
+
+    # 溢出情况: a + b + carry = c, (a, b)符号相同, (a, c)符号不同
+    def test_and_set_overflow_plus(self, a, b):
+        c = a + b + int(self.carry())
+        self.set_overflow((((a ^ b) & 0x80) == 0) and (((a ^ c) & 0x80) > 0))
+
+    # 溢出情况: a - b - carry = c, (a, b)符号不同, (a, c)符号不同
+    def test_and_set_overflow_minus(self, a, b):
+        c = a - b - int(self.carry())
+        self.set_overflow((((a ^ b) & 0x80) > 0) and (((a ^ c) & 0x80) > 0))
+
+    def reset_p(self):
+        self.p.value = 0x34
+
+    def push_stack(self, v):
+        pass
+
+    def pop_stack(self):
+        return
 
     @staticmethod
     def same_page(a1, a2):
         return (a1 & 0xff00) == (a2 & 0xff00)
 
-    #
+    def m_read(self, n):
+        return self.machine.memory.read(n)
+
+    def m_write(self, offset, v):
+        self.machine.memory.write(offset, v)
+
+    # ===== addressing mode =====
     def am_implied(self):
-        pass
+        return 0
 
     # A
     def am_accumulator(self):
-        pass
+        return 0
 
     # am_* all return 16bit int
     # like #v
@@ -85,46 +119,84 @@ class Cpu(object):
     # d
     def am_zero_page(self):
         self.pc.value += 1
-        return self._m.read(u16n(self.pc.value - 1))
+        return self.m_read(u16n(self.pc.value - 1))
+
+    def _am_zero_page_index(self, idx_val):
+        address = self.m_read(self.pc.value)
+        self.pc.value += 1
+        return u16n(address + idx_val)
 
     # d,x
     def am_zero_page_x(self):
-        pass
+        return self._am_zero_page_index(self.x.value)
 
     # d,y
     def am_zero_page_y(self):
-        pass
+        return self._am_zero_page_index(self.y.value)
 
     # label
     def am_relative(self):
-        pass
+        a1 = self.m_read(self.pc.value)
+        # a1: this value is signed, values #00-#7F are positive, and values #FF-#80 are negative
+        a2 = u16n(self.pc.value + a1) if a1 < 0x80 else u16n(a1 + self.pc.value - 0x100)
+        return a2 + 1
 
     # a
     def am_absolute(self):
-        high = self._m.read(u16n(self.pc.value + 1))
-        low = self._m.read(self.pc.value)
-        self.pc += 2
+        high = self.m_read(u16n(self.pc.value + 1))
+        low = self.m_read(self.pc.value)
+        self.pc.value += 2
+        return make_u16(high, low)
 
+    def _am_absolute_index(self, idx_val):
+        high = self.m_read(u16n(self.pc.value + 1))
+        low = self.m_read(self.pc.value)
+        address = make_u16(high, low)
+        address_idx = u16n(address + idx_val)
+        # cross-page penalty
+        self.cycles += 0 if Cpu.same_page(address, address_idx) else 1
+        self.pc.value += 2
+        return address_idx
 
     # a,x
     def am_absolute_x(self):
-        pass
+        return self._am_absolute_index(self.x.value)
 
     # a,y
     def am_absolute_y(self):
-        pass
+        return self._am_absolute_index(self.y.value)
 
     # (a)
     def am_indirect(self):
-        pass
+        high = self.m_read(u16n(self.pc.value + 1))
+        low = self.m_read(self.pc.value)
+        ah = make_u16(high, low)
+        al = make_u16(high, u8n(low + 1))
+        h_high = self.m_read(ah)
+        l_low = self.m_read(al)
+        make_u16(h_high, l_low)
 
     # (d,x)
+    # Pre-indexed indirect
     def am_indexed_indirect(self):
-        pass
+        a1 = u16n(self.m_read(self.pc.value) + self.x.value)
+        high = self.m_read(u16n(a1 + 1))
+        low = self.m_read(a1)
+        self.pc.value += 1
+        return make_u16(high, low)
 
     # (d),y
+    # Post-indexed indirect
     def am_indirect_indexed(self):
-        pass
+        a1 = self.m_read(self.pc.value)
+        high = self.m_read(u16n(a1 + 1))
+        low = self.m_read(a1)
+        a2 = make_u16(high, low)
+        a2_idx = u16n(a2 + self.y.value)
+        # cross-page
+        self.cycles += 0 if Cpu.same_page(a2, a2_idx) else 1
+        self.pc.value += 1
+        return a2_idx
 
-
+    # ===== end of addressing mode =====
 

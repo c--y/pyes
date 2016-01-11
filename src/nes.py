@@ -11,11 +11,13 @@
     6. apu
 """
 from cpu import Cpu
+from memory import Memory
+
 
 class Machine(object):
-
     def __init__(self):
         self.cpu = Cpu(self)
+        self.memory = Memory(self)
 
 
 M = Machine()
