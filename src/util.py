@@ -1,4 +1,20 @@
 # coding=utf-8
+import ctypes
+import functools
+
+# normalize a value
+def nv(fn, v):
+    return fn(v).value
+
+u8 = ctypes.c_uint8
+u16 = ctypes.c_uint16
+u32 = ctypes.c_uint32
+u64 = ctypes.c_uint64
+
+u8n = functools.partial(nv, u8)
+u16n = functools.partial(nv, u16)
+u32n = functools.partial(nv, u32)
+u64n = functools.partial(nv, u64)
 
 
 def bit(v, index):
@@ -7,6 +23,11 @@ def bit(v, index):
 
 def bit_all(v):
     return [bit(v, i) for i in xrange(8)]
+
+
+def bit_range(v, start, end):
+    assert start >= 0 and end <= 7
+    return [bit(v, i) for i in range(start, end+1)]
 
 
 def bits_to_int(bits):
@@ -19,7 +40,7 @@ def bits_to_int(bits):
 
 
 def set_bit(v, index, bv):
-    return v | (1 << index)
+    return v | (1 << index) if bv else v & (~(1 << index))
 
 
 def eq_seq(a, b):
@@ -29,3 +50,7 @@ def eq_seq(a, b):
         if a[i] != b[i]:
             return False
     return True
+
+
+def make_u16(hb, lb):
+    return u16n(hb << 8 | lb)

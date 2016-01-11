@@ -9,6 +9,13 @@ def test_bit_all():
     assert util.eq_seq(r, (False, True, False, True, False, True, True, True))
 
 
+def test_bit_range():
+    v = 234
+    r = util.bit_range(v, 2, 5)
+    print 'bit_range(234, 2, 5)=', r
+    assert util.eq_seq(r, (False, True, False, True))
+
+
 def test_bits_to_int():
     # 0b1101 = 13
     bits = (True, False, True, True)
