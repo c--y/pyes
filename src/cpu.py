@@ -17,6 +17,9 @@ class Cpu(object):
         # cycles
         self.cycles = 0
 
+        # 当前指令执行时间
+        self.wait_cycles = 0
+
         # program counter
         self.pc = u16()
         # stack pointer
