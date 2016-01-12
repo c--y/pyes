@@ -54,3 +54,7 @@ def eq_seq(a, b):
 
 def make_u16(hb, lb):
     return u16n(hb << 8 | lb)
+
+
+def unpack_u16(val):
+    return (val & 0xff00) >> 8, val & 0xff

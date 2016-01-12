@@ -32,3 +32,10 @@ def test_eq_seq():
     c = (1, 4, 5)
     assert not util.eq_seq(a, c)
 
+
+def test_unpack_u16():
+    x = 0x3344
+    h, l = util.unpack_u16(x)
+    print h, l
+    assert h == 0x33
+    assert l == 0x44
