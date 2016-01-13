@@ -256,4 +256,4 @@ def dis(code, c, pc):
 
     cmd, address_fn, cycles = opcodes.get(code)
     raw_bytes, address_str = address_fn(c, pc)
-    '%.4X  %.2X %-5s  %s %-28s' % (pc, code, raw_bytes, cmd, address_str)
+    return '%.4X  %.2X %-5s  %s %-28s' % (pc, code, raw_bytes, cmd, address_str)
