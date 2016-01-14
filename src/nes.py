@@ -11,13 +11,17 @@
     6. apu
 """
 from cpu import Cpu
+from ppu import Ppu
 from memory import Memory
+from control import Pad
 
 
 class Machine(object):
     def __init__(self):
         self.cpu = Cpu(self)
         self.memory = Memory(self)
+        self.ppu = Ppu(self)
+        self.pads = [Pad(self), Pad(self)]
 
 
 M = Machine()
