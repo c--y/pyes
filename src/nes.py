@@ -17,11 +17,16 @@ from control import Pad
 
 
 class Machine(object):
+
     def __init__(self):
         self.cpu = Cpu(self)
         self.memory = Memory(self)
         self.ppu = Ppu(self)
         self.pads = [Pad(self), Pad(self)]
+        self.rom = None
+
+    def load_rom(self):
+        pass
 
 
 M = Machine()

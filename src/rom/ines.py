@@ -1,6 +1,6 @@
 # coding=utf-8
 import ctypes
-from util import bit, bit_all, bits_to_int, bit_range, eq_seq, u8
+from util import bit, bit_all, bits_to_int, bit_range, eq_seq, u8, make_u16
 
 
 HEADER_MAGIC = (0x4e, 0x45, 0x53)
@@ -41,6 +41,9 @@ class _HeaderOption(object):
 
     def __repr__(self):
         return '_HeaderOption[]'
+
+    def mapper_number(self):
+        return make_u16(self.upper_mapper_number, self.lower_mapper_number)
 
 
 def _parse_header(byte_array):

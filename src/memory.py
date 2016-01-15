@@ -5,6 +5,7 @@ class Memory(object):
 
     def __init__(self, machine):
         self.m = Machine()
+        # 0x0000 ~ 0x1fff (0x800 bytes) physical internal ram
         self.cells = [0] * 0x10000
 
     def read(self, a):
@@ -31,6 +32,7 @@ class Memory(object):
 
         elif 0x8000 <= a <= 0xffff:
             # rom
+            # (0x8000 - 0xbfff) + (0xc000 - 0xffff)
             pass
 
         elif 0x5100 <= a <= 0x6000:
@@ -43,20 +45,32 @@ class Memory(object):
     def write(self, a, v):
         if 0x2000 <= a <= 0x2007:
             # write ppu regs
-            pass
+            self.m.ppu.reg_write(a, v)
         elif a == 0x4014:
             #
-            pass
+            self.m.ppu.reg_write(a, v)
+            self.cells[a] = v
+
+        elif a == 0x4016:
+            self.m.pads[0].write(v)
+            self.cells[a] = v
+
         elif a == 0x4017:
-            pass
+            self.m.pads[1].write(v)
+            self.cells[a] = v
+            # apu
+            self.m.apu.reg_write(a, v)
+
         elif (a & 0xf000) == 0x4000:
             # write apu
-            pass
+            self.m.apu.reg_write(a, v)
+
         elif 0x8000 <= a <= 0xffff:
             # write rom
-            pass
+            self.m.rom.write(a, v)
+
         elif 0x5100 <= a <= 0x6000:
-            # mmc5
-            pass
+            # TODO mmc5
+            self.cells[a] = v
         else:
             self.cells[a] = v
