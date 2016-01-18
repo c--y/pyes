@@ -13,7 +13,7 @@
 from cpu import Cpu
 from ppu import Ppu
 from memory import Memory
-from control import Pad
+from control import JoyStick
 
 
 class Machine(object):
@@ -22,7 +22,7 @@ class Machine(object):
         self.cpu = Cpu(self)
         self.memory = Memory(self)
         self.ppu = Ppu(self)
-        self.pads = [Pad(self), Pad(self)]
+        self.pads = [JoyStick(self), JoyStick(self)]
         self.rom = None
 
     def load_rom(self):

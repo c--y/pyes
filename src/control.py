@@ -1,7 +1,7 @@
 # coding=utf-8
 
 
-class Pad(object):
+class JoyStick(object):
 
     def __init__(self, machine):
         self.m = machine

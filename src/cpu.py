@@ -5,7 +5,19 @@
 """
 import functools
 import types
+import asm
 from util import u8, u16, u8n, u16n, set_bit, bit, make_u16, unpack_u16
+
+
+# bin() = 0b110100
+# interrupt = 1
+# brk = 1
+# - = 1
+CPU_P_INIT = 0x34
+
+CPU_INT_NMI = 0x1
+CPU_INT_IRQ = 0x2
+CPU_INT_RESET = 0x3
 
 
 class Cpu(object):
@@ -30,13 +42,20 @@ class Cpu(object):
         # status
         # 0     1    2         3       4     5  6        7
         # Carry Zero Interrupt Decimal Break -  Overflow Negative
-        self.p = u8()
+        self.p = u8(CPU_P_INIT)
         # x index
         self.x = u8()
         # y index
         self.y = u8()
 
+        # total cycles
         self.cycles = 0
+
+        # wait cycles
+        self.wait_cycles = 0
+
+        # current interrupt
+        self.current_interrupt = None
 
         p_bit_map = {
             'carry': 0,
@@ -217,6 +236,43 @@ class Cpu(object):
         else:
             fn()
 
+    def step(self):
+        """
+        One run
+        :return:
+        """
+        # nmi
+        if self.wait_cycles > 0:
+            self.wait_cycles -= 1
+            return 1
+
+        if self.current_interrupt:
+            if self.current_interrupt == CPU_INT_NMI:
+                self.nmi()
+            elif self.current_interrupt == CPU_INT_IRQ:
+                self.irq()
+            elif self.current_interrupt == CPU_INT_RESET:
+                self.reset()
+            self.current_interrupt = None
+
+        # read-eval-loop
+        bytecode = self.m_read(self.pc)
+        print asm.dis(bytecode, self, self.pc)
+        self.pc += 1
+        self.eval_bytecode(bytecode)
+
+    def nmi(self):
+        pass
+
+    def irq(self):
+        h, l = unpack_u16(self.pc)
+        self.push_stack(h)
+        self.push_stack(l)
+        self.push_stack()
+
+    def reset(self):
+        pass
+
     @staticmethod
     def _p_test(obj, i=0):
         return bit(obj.p.value, i)
@@ -386,7 +442,7 @@ class Cpu(object):
     # ===== end of addressing mode =====
 
 
-    # ===== opcodes ======
+    # ===== instructions ======
     def adc(self, a):
         v = self.m_read(a)
         r = v + self.acc.value + int(self.carry())
