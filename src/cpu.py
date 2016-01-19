@@ -224,6 +224,9 @@ class Cpu(object):
             0xfe: (self.inc, self.am_absolute_x, 7)
         }
 
+    def info(self):
+        return 'A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X' % (self.acc, self.x, self.y, self.p, self.sp)
+
     def eval_bytecode(self, code):
         if code not in self.opcodes:
             raise Exception('illegal bytecode')
@@ -257,7 +260,7 @@ class Cpu(object):
 
         # read-eval-loop
         bytecode = self.m_read(self.pc)
-        print asm.dis(bytecode, self, self.pc)
+        print asm.dis(bytecode, self, self.pc), self.info()
         self.pc += 1
         self.eval_bytecode(bytecode)
 
