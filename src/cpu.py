@@ -441,7 +441,6 @@ class Cpu(object):
 
     # ===== end of addressing mode =====
 
-
     # ===== instructions ======
     def adc(self, a):
         v = self.m_read(a)
