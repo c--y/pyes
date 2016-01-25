@@ -28,8 +28,8 @@ def am_zero_page(c, pc):
 
 
 def am_immediate(c, pc):
-    v = c.m_read(pc - 1)
-    return [v], '$#%.2X' % (v,)
+    v = c.m_read(pc)
+    return [v], '#$%.2X' % (v,)
 
 
 def am_accumulator(c, pc):
@@ -39,11 +39,15 @@ def am_accumulator(c, pc):
 def am_absolute(c, pc):
     h = c.m_read(pc + 1)
     l = c.m_read(pc)
-    return [l, h], '$%.4X' % (make_u16(h, l),)
+    return [l, h], '$%.4X' % (make_u16(h, l))
 
 
 def am_relative(c, pc):
-    return [], ''
+    a1 = c.m_read(pc)
+    pc += 1
+    # a1: this value is signed, values #00-#7F are positive, and values #FF-#80 are negative
+    a2 = u16n(pc + a1) if a1 < 0x80 else u16n(a1 + pc - 0x100)
+    return [a1], '$%.4X' % (a2,)
 
 
 def am_indirect_indexed(c, pc):
@@ -211,6 +215,7 @@ opcodes = {
     0xbc: ('LDY', am_absolute_x, 4),
     0xbd: ('LDA', am_absolute_x, 4),
     0xbe: ('LDX', am_absolute_y, 4),
+    0xc0: ('CPY', am_immediate, 2),
     0xc1: ('CMP', am_indexed_indirect, 2),
     0xc4: ('CPY', am_zero_page, 3),
     0xc5: ('CMP', am_zero_page, 3),
@@ -256,4 +261,4 @@ def dis(code, c, pc):
 
     cmd, address_fn, cycles = opcodes.get(code)
     raw_bytes, address_str = address_fn(c, pc)
-    return '%.4X  %.2X %-5s  %s %-28s' % (pc, code, raw_bytes, cmd, address_str)
+    return '%.4X  %.2X %-5s  %s %-27s' % (pc - 1, code, ' '.join(("%.2X" % (x,) for x in raw_bytes)), cmd, address_str)

@@ -1,17 +1,41 @@
 # coding=utf-8
 import ctypes
+from rom.cnrom import CNRom
+from rom.mmc1 import Mmc1
+from rom.mmc3 import Mmc3
+from rom.nrom import NRom
+from rom.unrom import UNRom
 from util import bit, bit_all, bits_to_int, bit_range, eq_seq, u8, make_u16
 
 
 HEADER_MAGIC = (0x4e, 0x45, 0x53)
 
+# prg-rom 单位
+BANK_SIZE_16K = 16384
+# chr-rom 单位
+BANK_SIZE_8K = 8192
+
+MAPPER_MAP = {
+    0x0: NRom,
+    0x1: Mmc1,
+    0x2: UNRom,
+    0x3: CNRom,
+    0x4: Mmc3
+}
+
 
 class INesRom(object):
-    def __init__(self, option, trainer, prg_rom, chr_rom):
+    def __init__(self, option, trainer, prg_banks, chr_banks):
         self.option = option
         self.trainer = trainer
-        self.prg_rom = prg_rom
-        self.chr_rom = chr_rom
+        self.prg_banks = prg_banks
+        self.chr_banks = chr_banks
+
+    def to_mapper(self):
+        num = self.option.mapper_number()
+        if num in MAPPER_MAP:
+            return MAPPER_MAP[num](self)
+        raise NotImplementedError('unsupported mapper')
 
 
 class _HeaderOption(object):
@@ -82,8 +106,12 @@ def _parse_ines(fd):
     i = 0
     header_option  = _parse_header(fd.read(16))
     trainer = fd.read(512) if header_option.has_trainer else None
-    prg_rom = fd.read(16384 * header_option.prg_size)
-    chr_rom = fd.read(8192 * header_option.chr_size)
+    prg_rom = []
+    for i in xrange(header_option.prg_size):
+        prg_rom.append(map(ord, fd.read(16384)))
+    chr_rom = []
+    for i in xrange(header_option.chr_size):
+        chr_rom.append(map(ord, fd.read(8192)))
     # TODO
     # play choice inst-rom, if present (0 or 8192 bytes)
     # play choice prom, if present (16 bytes data, 16 bytes counterout)

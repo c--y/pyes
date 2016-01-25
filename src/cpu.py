@@ -13,8 +13,8 @@ from util import u8, u16, u8n, u16n, set_bit, bit, make_u16, unpack_u16
 # interrupt = 1
 # brk = 1
 # - = 1
-CPU_P_INIT = 0x34
-
+CPU_P_INIT = 0x24
+CPU_SP_INIT = 0xFD
 CPU_INT_NMI = 0x1
 CPU_INT_IRQ = 0x2
 CPU_INT_RESET = 0x3
@@ -35,7 +35,7 @@ class Cpu(object):
         # program counter
         self.pc = u16()
         # stack pointer
-        self.sp = u8()
+        self.sp = u8(CPU_SP_INIT)
         # accumulator
         self.acc = u8()
 
@@ -186,6 +186,7 @@ class Cpu(object):
             0xbc: (self.ldy, self.am_absolute_x, 4),
             0xbd: (self.lda, self.am_absolute_x, 4),
             0xbe: (self.ldx, self.am_absolute_y, 4),
+            0xc0: (self.cpy, self.am_immediate, 2),
             0xc1: (self.cmp, self.am_indexed_indirect, 2),
             0xc4: (self.cpy, self.am_zero_page, 3),
             0xc5: (self.cmp, self.am_zero_page, 3),
@@ -225,19 +226,21 @@ class Cpu(object):
         }
 
     def info(self):
-        return 'A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X' % (self.acc, self.x, self.y, self.p, self.sp)
+        return 'A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X' % \
+               (self.acc.value, self.x.value, self.y.value, self.p.value, self.sp.value)
 
     def eval_bytecode(self, code):
         if code not in self.opcodes:
             raise Exception('illegal bytecode')
 
-        fn, address_fn, cycles = self.opcode[code]
+        fn, address_fn, cycles = self.opcodes[code]
         address = address_fn()
         # 如果address为None,则寻址方式是Implied或是Immediate, 则相应的执行函数不使用函数
-        if address:
+        if address is not None:
             fn(address)
         else:
             fn()
+        return cycles
 
     def step(self):
         """
@@ -259,10 +262,10 @@ class Cpu(object):
             self.current_interrupt = None
 
         # read-eval-loop
-        bytecode = self.m_read(self.pc)
-        print asm.dis(bytecode, self, self.pc), self.info()
-        self.pc += 1
-        self.eval_bytecode(bytecode)
+        bytecode = self.m_read(self.pc.value)
+        self.pc.value += 1
+        print asm.dis(bytecode, self, self.pc.value), self.info()
+        return self.eval_bytecode(bytecode)
 
     def nmi(self):
         pass
@@ -327,6 +330,11 @@ class Cpu(object):
         self.sp.value += 1
         v = self.m_read(u16n(0x100 + self.sp.value))
         return v
+
+    def load_reset_vector(self):
+        h = self.m.m_read(0xfffd)
+        l = self.m.m_read(0xfffc)
+        self.pc = make_u16(h, l)
 
     @staticmethod
     def same_page(a1, a2):
@@ -499,10 +507,10 @@ class Cpu(object):
 
     def bit(self, a):
         v = self.m_read(a)
-        r = u8n(self.acc.value & v)
+        r = self.acc.value & v
         self.test_and_set_zero(r)
-        self.test_and_set_negative(r)
-        self.test_and_set_overflow(r)
+        self.test_and_set_negative(v)
+        self.test_and_set_overflow(v)
 
     # branch if minus
     def bmi(self, a):
@@ -540,7 +548,7 @@ class Cpu(object):
     # 3. SEI
     # 4. JMP ($FFFE)
     #
-    def brk(self, a):
+    def brk(self):
         self.pc.value += 1
         h, l = unpack_u16(self.pc.value)
         self.push_stack(h)
@@ -588,7 +596,7 @@ class Cpu(object):
         c = a - b
         self.set_zero(c == 0)
         # FIXME ?
-        self.set_negative(c < 0)
+        self.test_and_set_negative(c)
         self.test_and_set_carry_minus(c)
 
     # compare with acc
@@ -709,7 +717,7 @@ class Cpu(object):
     def ora(self, a):
         v = self.m_read(a)
         r = u8n(self.acc.value | v)
-        self.m_write(a, r)
+        self.acc.value = r
         self.test_and_set_negative(r)
         self.test_and_set_zero(r)
 
@@ -719,15 +727,19 @@ class Cpu(object):
 
     # push status register
     def php(self):
-        self.push_stack(self.p.value)
+        self.push_stack(self.p.value | 0x10)
 
     # pull acc
     def pla(self):
         self.acc.value = self.pop_stack()
+        self.test_and_set_zero(self.acc.value)
+        self.test_and_set_negative(self.acc.value)
 
     # pull status register
     def plp(self):
         self.p.value = self.pop_stack()
+        # unset bit 5
+        self.p.value = (self.p.value | 0x30) - 0x10
 
     # rotate left
     def rol(self, a):
@@ -790,7 +802,7 @@ class Cpu(object):
         self.acc.value -= v
 
         carry_delta = 1 if self.carry() else 0
-        self.acc -= 1 - carry_delta
+        self.acc.value -= (1 - carry_delta)
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
         self.test_and_set_overflow_minus(temp, v)
@@ -821,35 +833,35 @@ class Cpu(object):
         self.m_write(a, self.y.value)
 
     # transfer acc t o x
-    def tax(self, a):
+    def tax(self):
         self.x.value = self.acc.value
         self.test_and_set_negative(self.x.value)
         self.test_and_set_zero(self.x.value)
 
     # transfer acc to y
-    def tay(self, a):
+    def tay(self):
         self.y.value = self.acc.value
         self.test_and_set_negative(self.y.value)
         self.test_and_set_zero(self.y.value)
 
     # transfer sp to x
-    def tsx(self, a):
+    def tsx(self):
         self.x.value = self.sp.value
         self.test_and_set_negative(self.x.value)
         self.test_and_set_zero(self.x.value)
 
     # transfer x to acc
-    def txa(self, a):
+    def txa(self):
         self.acc.value = self.x.value
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
 
     # transfer x to acc
-    def txs(self, a):
+    def txs(self):
         self.sp.value = self.x.value
 
     # transfer y to acc
-    def tya(self, a):
+    def tya(self):
         self.acc.value = self.y.value
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)

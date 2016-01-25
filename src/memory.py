@@ -1,10 +1,10 @@
-from nes import Machine
+# coding=utf-8
 
 
 class Memory(object):
 
     def __init__(self, machine):
-        self.m = Machine()
+        self.m = machine
         # 0x0000 ~ 0x1fff (0x800 bytes) physical internal ram
         self.cells = [0] * 0x10000
 
@@ -32,8 +32,8 @@ class Memory(object):
 
         elif 0x8000 <= a <= 0xffff:
             # rom
-            # (0x8000 - 0xbfff) + (0xc000 - 0xffff)
-            pass
+            # (0x8000~0xbfff) + (0xc000~0xffff)
+            return self.m.rom.read(a)
 
         elif 0x5100 <= a <= 0x6000:
             # mmc5
