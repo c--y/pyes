@@ -11,14 +11,14 @@ def am_implied(c, pc):
 
 def am_indexed_indirect(c, pc):
     a0 = c.m_read(pc)
-    a1 = u16n(a0 + c.x.value)
+    a1 = u8n(a0 + c.x.value)
 
-    h = c.m_read(u16n(a1 + 1))
+    h = c.m_read(u8n(a1 + 1))
     l = c.m_read(a1)
     r = make_u16(h, l)
     v = c.m_read(r)
 
-    return [a0], '($%.2X,X) @ %.2X = %.4X = %.2X' % (a0, a0, r, v)
+    return [a0], '($%.2X,X) @ %.2X = %.4X = %.2X' % (a0, a1, r, v)
 
 
 def am_zero_page(c, pc):
@@ -33,13 +33,22 @@ def am_immediate(c, pc):
 
 
 def am_accumulator(c, pc):
-    return [], ''
+    return [], 'A'
 
 
 def am_absolute(c, pc):
     h = c.m_read(pc + 1)
     l = c.m_read(pc)
-    return [l, h], '$%.4X' % (make_u16(h, l))
+    a = make_u16(h, l)
+    return [l, h], '$%.4X' % (a,)
+
+
+def am_absolute_value(c, pc):
+    h = c.m_read(pc + 1)
+    l = c.m_read(pc)
+    a = make_u16(h, l)
+    v = c.m_read(a)
+    return [l, h], '$%.4X = %.2X' % (a, v)
 
 
 def am_relative(c, pc):
@@ -54,7 +63,7 @@ def am_indirect_indexed(c, pc):
     a0 = c.m_read(pc)
     h = c.m_read(u16n(a0 + 1))
     l = c.m_read(a0)
-    r = u16n(make_u16(h, l) + c.y.value)
+    r = u8n(make_u16(h, l) + c.y.value)
     v = c.m_read(r)
 
     return [a0], '($%.2X),Y = %.4X @ %.4X = $.2X' % (a0, r, r, v)
@@ -110,8 +119,8 @@ opcodes = {
     0x08: ('PHP', am_implied, 3),
     0x09: ('ORA', am_immediate, 2),
     0x0a: ('ASL', am_accumulator, 2),
-    0x0d: ('ORA', am_absolute, 4),
-    0x0e: ('ASL', am_absolute, 6),
+    0x0d: ('ORA', am_absolute_value, 4),
+    0x0e: ('ASL', am_absolute_value, 6),
     0x10: ('BPL', am_relative, 2),
     0x11: ('ORA', am_indirect_indexed, 5),
     0x15: ('ORA', am_zero_page_x, 4),
@@ -128,9 +137,9 @@ opcodes = {
     0x28: ('PLP', am_implied, 4),
     0x29: ('AND', am_immediate, 2),
     0x2a: ('ROL', am_accumulator, 2),
-    0x2c: ('BIT', am_absolute, 4),
-    0x2d: ('AND', am_absolute, 4),
-    0x2e: ('ROL', am_absolute, 6),
+    0x2c: ('BIT', am_absolute_value, 4),
+    0x2d: ('AND', am_absolute_value, 4),
+    0x2e: ('ROL', am_absolute_value, 6),
     0x30: ('BMI', am_relative, 2),
     0x31: ('AND', am_indirect_indexed, 5),
     0x35: ('AND', am_zero_page_x, 4),
@@ -147,8 +156,8 @@ opcodes = {
     0x49: ('EOR', am_immediate, 2),
     0x4a: ('LSR', am_accumulator, 2),
     0x4c: ('JMP', am_absolute, 3),
-    0x4d: ('EOR', am_absolute, 4),
-    0x4e: ('LSR', am_absolute, 6),
+    0x4d: ('EOR', am_absolute_value, 4),
+    0x4e: ('LSR', am_absolute_value, 6),
     0x50: ('BVC', am_relative, 2),
     0x51: ('EOR', am_indirect_indexed, 5),
     0x55: ('EOR', am_zero_page_x, 4),
@@ -165,8 +174,8 @@ opcodes = {
     0x69: ('ADC', am_immediate, 2),
     0x6a: ('ROR', am_accumulator, 2),
     0x6c: ('JMP', am_indirect, 5),
-    0x6d: ('ADC', am_absolute, 4),
-    0x6e: ('ROR', am_absolute, 6),
+    0x6d: ('ADC', am_absolute_value, 4),
+    0x6e: ('ROR', am_absolute_value, 6),
     0x70: ('BVS', am_relative, 2),
     0x71: ('ADC', am_indirect_indexed, 5),
     0x75: ('ADC', am_zero_page_x, 4),
@@ -180,9 +189,9 @@ opcodes = {
     0x86: ('STX', am_zero_page, 3),
     0x88: ('DEY', am_implied, 2),
     0x8a: ('TXA', am_implied, 2),
-    0x8c: ('STY', am_absolute, 4),
-    0x8d: ('STA', am_absolute, 4),
-    0x8e: ('STX', am_absolute, 4),
+    0x8c: ('STY', am_absolute_value, 4),
+    0x8d: ('STA', am_absolute_value, 4),
+    0x8e: ('STX', am_absolute_value, 4),
     0x90: ('BCC', am_relative, 2),
     0x91: ('STA', am_indirect_indexed, 6),
     0x94: ('STY', am_zero_page_x, 4),
@@ -201,9 +210,9 @@ opcodes = {
     0xa8: ('TAY', am_implied, 2),
     0xa9: ('LDA', am_immediate, 2),
     0xaa: ('TAX', am_implied, 2),
-    0xac: ('LDY', am_absolute, 4),
-    0xad: ('LDA', am_absolute, 4),
-    0xae: ('LDX', am_absolute, 4),
+    0xac: ('LDY', am_absolute_value, 4),
+    0xad: ('LDA', am_absolute_value, 4),
+    0xae: ('LDX', am_absolute_value, 4),
     0xb0: ('BCS', am_relative, 2),
     0xb1: ('LDA', am_indirect_indexed, 5),
     0xb4: ('LDY', am_zero_page_x, 4),
@@ -223,9 +232,9 @@ opcodes = {
     0xc8: ('INY', am_implied, 2),
     0xc9: ('CMP', am_immediate, 2),
     0xca: ('DEX', am_implied, 2),
-    0xcc: ('CPY', am_absolute, 4),
-    0xcd: ('CMP', am_absolute, 4),
-    0xce: ('DEC', am_absolute, 6),
+    0xcc: ('CPY', am_absolute_value, 4),
+    0xcd: ('CMP', am_absolute_value, 4),
+    0xce: ('DEC', am_absolute_value, 6),
     0xd0: ('BNE', am_relative, 2),
     0xd1: ('CMP', am_indirect_indexed, 5),
     0xd5: ('CMP', am_zero_page_x, 4),
@@ -242,8 +251,9 @@ opcodes = {
     0xe8: ('INX', am_implied, 2),
     0xe9: ('SBC', am_immediate, 2),
     0xea: ('NOP', am_implied, 2),
-    0xeb: ('CPX', am_absolute, 4),
-    0xed: ('SBC', am_absolute, 4),
+    # 0xeb: ('CPX', am_absolute_value, 4),
+    0xec: ('CPX', am_absolute_value, 4),
+    0xed: ('SBC', am_absolute_value, 4),
     0xf0: ('BEQ', am_relative, 2),
     0xf1: ('SBC', am_indirect_indexed, 5),
     0xf5: ('SBC', am_zero_page_x, 4),

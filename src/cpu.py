@@ -213,7 +213,9 @@ class Cpu(object):
             0xe8: (self.inx, self.am_implied, 2),
             0xe9: (self.sbc, self.am_immediate, 2),
             0xea: (self.nop, self.am_implied, 2),
-            0xeb: (self.cpx, self.am_absolute, 4),
+            # 0xeb: (self.cpx, self.am_absolute, 4),
+            0xec: (self.cpx, self.am_absolute, 4),
+            0xee: (self.inc, self.am_absolute, )
             0xed: (self.sbc, self.am_absolute, 4),
             0xf0: (self.beq, self.am_relative, 2),
             0xf1: (self.sbc, self.am_indirect_indexed, 5),
@@ -431,8 +433,8 @@ class Cpu(object):
     # (d,x)
     # Pre-indexed indirect
     def am_indexed_indirect(self):
-        a1 = u16n(self.m_read(self.pc.value) + self.x.value)
-        high = self.m_read(u16n(a1 + 1))
+        a1 = u8n(self.m_read(self.pc.value) + self.x.value)
+        high = self.m_read(u8n(a1 + 1))
         low = self.m_read(a1)
         self.pc.value += 1
         return make_u16(high, low)
@@ -444,7 +446,7 @@ class Cpu(object):
         high = self.m_read(u16n(a1 + 1))
         low = self.m_read(a1)
         a2 = make_u16(high, low)
-        a2_idx = u16n(a2 + self.y.value)
+        a2_idx = u8n(a2 + self.y.value)
         # cross-page
         self.cycles += 0 if Cpu.same_page(a2, a2_idx) else 1
         self.pc.value += 1
@@ -478,7 +480,7 @@ class Cpu(object):
 
     def asl_acc(self):
         # a always equals 0
-        self.set_carray((self.acc.value & 0x80) > 0)
+        self.set_carry((self.acc.value & 0x80) > 0)
         self.acc.value <<= 1
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
@@ -666,7 +668,7 @@ class Cpu(object):
 
     # jump to subroutine
     def jsr(self, a):
-        h, l = unpack_u16(self.pc.value)
+        h, l = unpack_u16(self.pc.value - 1)
         self.push_stack(h)
         self.push_stack(l)
         self.pc.value = a
@@ -698,6 +700,7 @@ class Cpu(object):
     # logic shift right
     def lsr(self, a):
         v = self.m_read(a)
+        self.set_carry(v & 0x1 > 0)
         r = u8n(v >> 1)
         self.m_write(a, r)
 
@@ -706,6 +709,7 @@ class Cpu(object):
 
     # lsr acc
     def lsr_acc(self):
+        self.set_carry(self.acc.value & 0x01 > 0)
         self.acc.value >>= 1
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
@@ -781,6 +785,7 @@ class Cpu(object):
         self.acc.value += 0x80 if self.carry() else 0
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
+        self.set_carry(temp_carry > 0)
 
     # return from interrupt
     def rti(self):
@@ -793,7 +798,7 @@ class Cpu(object):
     def rts(self):
         l = self.pop_stack()
         h = self.pop_stack()
-        self.pc.value = make_u16(h, l)
+        self.pc.value = make_u16(h, l) + 1
 
     # subtract with carry
     def sbc(self, a):
