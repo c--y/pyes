@@ -76,89 +76,140 @@ class Cpu(object):
         self.opcodes = {
             0x00: (self.brk, self.am_implied, 7),
             0x01: (self.ora, self.am_indexed_indirect, 6),
+            0x03: (self.slo, self.am_indexed_indirect, 8),
+            0x04: (self.nop, self.am_zero_page, 3), # maybe tsb(test and set bits)
             0x05: (self.ora, self.am_zero_page, 2),
             0x06: (self.asl, self.am_zero_page, 5),
+            0x07: (self.slo, self.am_zero_page, 5),
             0x08: (self.php, self.am_implied, 3),
             0x09: (self.ora, self.am_immediate, 2),
             0x0a: (self.asl_acc, self.am_accumulator, 2),
+            0x0c: (self.nop, self.am_absolute, 4),
             0x0d: (self.ora, self.am_absolute, 4),
             0x0e: (self.asl, self.am_absolute, 6),
+            0x0f: (self.slo, self.am_absolute, 6),
             0x10: (self.bpl, self.am_relative, 2),
             0x11: (self.ora, self.am_indirect_indexed, 5),
+            0x13: (self.slo, self.am_indirect_indexed, 8),
+            0x14: (self.nop, self.am_zero_page_x, 4),
             0x15: (self.ora, self.am_zero_page_x, 4),
             0x16: (self.asl, self.am_zero_page_x, 6),
+            0x17: (self.slo, self.am_zero_page_x, 6),
             0x18: (self.clc, self.am_implied, 2),
             0x19: (self.ora, self.am_absolute_y, 4),
+            0x1a: (self.nop, self.am_implied, 2),
+            0x1b: (self.slo, self.am_absolute_y, 7),
+            0x1c: (self.nop, self.am_absolute_x, 4),
             0x1d: (self.ora, self.am_absolute_x, 4),
             0x1e: (self.asl, self.am_absolute_x, 7),
+            0x1f: (self.slo, self.am_absolute_x, 7),
             0x20: (self.jsr, self.am_absolute, 6),
             0x21: (self.and_, self.am_indexed_indirect, 6),
+            0x23: (self.rla, self.am_indexed_indirect, 8),
             0x24: (self.bit, self.am_zero_page, 3),
             0x25: (self.and_, self.am_zero_page, 3),
             0x26: (self.rol, self.am_zero_page, 5),
+            0x27: (self.rla, self.am_zero_page, 5),
             0x28: (self.plp, self.am_implied, 4),
             0x29: (self.and_, self.am_immediate, 2),
             0x2a: (self.rol_acc, self.am_accumulator, 2),
             0x2c: (self.bit, self.am_absolute, 4),
             0x2d: (self.and_, self.am_absolute, 4),
             0x2e: (self.rol, self.am_absolute, 6),
+            0x2f: (self.rla, self.am_absolute, 6),
             0x30: (self.bmi, self.am_relative, 2),
             0x31: (self.and_, self.am_indirect_indexed, 5),
+            0x33: (self.rla, self.am_indirect_indexed, 8),
+            0x34: (self.nop, self.am_zero_page_x, 4),
             0x35: (self.and_, self.am_zero_page_x, 4),
             0x36: (self.rol, self.am_zero_page_x, 6),
+            0x37: (self.rla, self.am_zero_page_x, 6),
             0x38: (self.sec, self.am_implied, 2),
             0x39: (self.and_, self.am_absolute_y, 4),
+            0x3a: (self.nop, self.am_implied, 2),
+            0x3b: (self.rla, self.am_absolute_y, 7),
+            0x3c: (self.nop, self.am_absolute_x, 4),
             0x3d: (self.and_, self.am_absolute_x, 4),
             0x3e: (self.rol, self.am_absolute_x, 7),
+            0x3f: (self.rla, self.am_absolute_x, 7),
             0x40: (self.rti, self.am_implied, 6),
             0x41: (self.eor, self.am_indexed_indirect, 6),
+            0x43: (self.sre, self.am_indexed_indirect, 8),
+            0x44: (self.nop, self.am_zero_page, 3),
             0x45: (self.eor, self.am_zero_page, 3),
             0x46: (self.lsr, self.am_zero_page, 5),
+            0x47: (self.sre, self.am_zero_page, 5),
             0x48: (self.pha, self.am_implied, 3),
             0x49: (self.eor, self.am_immediate, 2),
             0x4a: (self.lsr_acc, self.am_accumulator, 2),
             0x4c: (self.jmp, self.am_absolute, 3),
             0x4d: (self.eor, self.am_absolute, 4),
             0x4e: (self.lsr, self.am_absolute, 6),
+            0x4f: (self.sre, self.am_absolute, 6),
             0x50: (self.bvc, self.am_relative, 2),
             0x51: (self.eor, self.am_indirect_indexed, 5),
+            0x53: (self.sre, self.am_indirect_indexed, 8),
+            0x54: (self.nop, self.am_zero_page_x, 4),
             0x55: (self.eor, self.am_zero_page_x, 4),
             0x56: (self.lsr, self.am_zero_page_x, 6),
+            0x57: (self.sre, self.am_zero_page_x, 6),
             0x58: (self.cli, self.am_implied, 2),
             0x59: (self.eor, self.am_absolute_y, 4),
+            0x5a: (self.nop, self.am_implied, 2),
+            0x5b: (self.sre, self.am_absolute_y, 7),
+            0x5c: (self.nop, self.am_absolute_x, 4),
             0x5d: (self.eor, self.am_absolute_x, 4),
             0x5e: (self.lsr, self.am_absolute_x, 7),
+            0x5f: (self.sre, self.am_absolute_x, 7),
             0x60: (self.rts, self.am_implied, 6),
             0x61: (self.adc, self.am_indexed_indirect, 6),
+            0x63: (self.rra, self.am_indexed_indirect, 8),
+            0x64: (self.nop, self.am_zero_page, 3),
             0x65: (self.adc, self.am_zero_page, 3),
             0x66: (self.ror, self.am_zero_page, 5),
+            0x67: (self.rra, self.am_zero_page, 5),
             0x68: (self.pla, self.am_implied, 4),
             0x69: (self.adc, self.am_immediate, 2),
             0x6a: (self.ror_acc, self.am_accumulator, 2),
             0x6c: (self.jmp, self.am_indirect, 5),
             0x6d: (self.adc, self.am_absolute, 4),
             0x6e: (self.ror, self.am_absolute, 6),
+            0x6f: (self.rra, self.am_absolute, 6),
             0x70: (self.bvs, self.am_relative, 2),
             0x71: (self.adc, self.am_indirect_indexed, 5),
+            0x73: (self.rra, self.am_indirect_indexed, 8),
+            0x74: (self.nop, self.am_zero_page_x, 4),
             0x75: (self.adc, self.am_zero_page_x, 4),
             0x76: (self.ror, self.am_zero_page_x, 6),
+            0x77: (self.rra, self.am_zero_page_x, 6),
             0x78: (self.sei, self.am_implied, 2),
             0x79: (self.adc, self.am_absolute_y, 4),
+            0x7a: (self.nop, self.am_implied, 2),
+            0x7b: (self.rra, self.am_absolute_y, 7),
+            0x7c: (self.nop, self.am_absolute_x, 4),
+            0x7d: (self.adc, self.am_absolute_x, 4),
             0x7e: (self.ror, self.am_absolute_x, 7),
+            0x7f: (self.rra, self.am_absolute_x, 7),
+            0x80: (self.nop, self.am_immediate, 2),
             0x81: (self.sta, self.am_indexed_indirect, 6),
+            0x83: (self.sax, self.am_indexed_indirect, 6),
             0x84: (self.sty, self.am_zero_page, 3),
             0x85: (self.sta, self.am_zero_page, 3),
             0x86: (self.stx, self.am_zero_page, 3),
+            0x87: (self.sax, self.am_zero_page, 3),
             0x88: (self.dey, self.am_implied, 2),
+            0x89: (self.nop, self.am_immediate, 2),
             0x8a: (self.txa, self.am_implied, 2),
             0x8c: (self.sty, self.am_absolute, 4),
             0x8d: (self.sta, self.am_absolute, 4),
             0x8e: (self.stx, self.am_absolute, 4),
+            0x8f: (self.sax, self.am_absolute, 4),
             0x90: (self.bcc, self.am_relative, 2),
             0x91: (self.sta, self.am_indirect_indexed, 6),
             0x94: (self.sty, self.am_zero_page_x, 4),
             0x95: (self.sta, self.am_zero_page_x, 4),
             0x96: (self.stx, self.am_zero_page_y, 4),
+            0x97: (self.sax, self.am_zero_page_y, 4),
             0x98: (self.tya, self.am_implied, 2),
             0x99: (self.sta, self.am_absolute_y, 5),
             0x9a: (self.txs, self.am_implied, 2),
@@ -166,65 +217,91 @@ class Cpu(object):
             0xa0: (self.ldy, self.am_immediate, 2),
             0xa1: (self.lda, self.am_indexed_indirect, 6),
             0xa2: (self.ldx, self.am_immediate, 2),
+            0xa3: (self.lax, self.am_indexed_indirect, 6),
             0xa4: (self.ldy, self.am_zero_page, 3),
             0xa5: (self.lda, self.am_zero_page, 3),
             0xa6: (self.ldx, self.am_zero_page, 3),
+            0xa7: (self.lax, self.am_zero_page, 3),
             0xa8: (self.tay, self.am_implied, 2),
             0xa9: (self.lda, self.am_immediate, 2),
             0xaa: (self.tax, self.am_implied, 2),
             0xac: (self.ldy, self.am_absolute, 4),
             0xad: (self.lda, self.am_absolute, 4),
             0xae: (self.ldx, self.am_absolute, 4),
+            0xaf: (self.lax, self.am_absolute, 4),
             0xb0: (self.bcs, self.am_relative, 2),
             0xb1: (self.lda, self.am_indirect_indexed, 5),
+            0xb3: (self.lax, self.am_indirect_indexed, 5),
             0xb4: (self.ldy, self.am_zero_page_x, 4),
             0xb5: (self.lda, self.am_zero_page_x, 4),
             0xb6: (self.ldx, self.am_zero_page_y, 4),
+            0xb7: (self.lax, self.am_zero_page_y, 4),
             0xb8: (self.clv, self.am_implied, 2),
             0xb9: (self.lda, self.am_absolute_y, 4),
             0xba: (self.tsx, self.am_implied, 2),
             0xbc: (self.ldy, self.am_absolute_x, 4),
             0xbd: (self.lda, self.am_absolute_x, 4),
             0xbe: (self.ldx, self.am_absolute_y, 4),
+            0xbf: (self.lax, self.am_absolute_y, 4),
             0xc0: (self.cpy, self.am_immediate, 2),
             0xc1: (self.cmp, self.am_indexed_indirect, 2),
+            0xc3: (self.dcp, self.am_indexed_indirect, 8),
             0xc4: (self.cpy, self.am_zero_page, 3),
             0xc5: (self.cmp, self.am_zero_page, 3),
             0xc6: (self.dec, self.am_zero_page, 5),
+            0xc7: (self.dcp, self.am_zero_page, 5),
             0xc8: (self.iny, self.am_implied, 2),
             0xc9: (self.cmp, self.am_immediate, 2),
             0xca: (self.dex, self.am_implied, 2),
             0xcc: (self.cpy, self.am_absolute, 4),
             0xcd: (self.cmp, self.am_absolute, 4),
             0xce: (self.dec, self.am_absolute, 6),
+            0xcf: (self.dcp, self.am_absolute, 6),
             0xd0: (self.bne, self.am_relative, 2),
             0xd1: (self.cmp, self.am_indirect_indexed, 5),
+            0xd3: (self.dcp, self.am_indirect_indexed, 8),
+            0xd4: (self.nop, self.am_zero_page_x, 4),
             0xd5: (self.cmp, self.am_zero_page_x, 4),
             0xd6: (self.dec, self.am_zero_page_x, 6),
+            0xd7: (self.dcp, self.am_zero_page_x, 6),
             0xd8: (self.cld, self.am_implied, 2),
             0xd9: (self.cmp, self.am_absolute_y, 4),
+            0xda: (self.nop, self.am_implied, 2),
+            0xdb: (self.dcp, self.am_absolute_y, 7),
+            0xdc: (self.nop, self.am_absolute_x, 4),
             0xdd: (self.cmp, self.am_absolute_x, 4),
             0xde: (self.dec, self.am_absolute_x, 7),
+            0xdf: (self.dcp, self.am_absolute_x, 7),
             0xe0: (self.cpx, self.am_immediate, 2),
             0xe1: (self.sbc, self.am_indexed_indirect, 6),
+            0xe3: (self.isb, self.am_indexed_indirect, 8),
             0xe4: (self.cpx, self.am_zero_page, 3),
             0xe5: (self.sbc, self.am_zero_page, 3),
             0xe6: (self.inc, self.am_zero_page, 5),
+            0xe7: (self.isb, self.am_zero_page, 5),
             0xe8: (self.inx, self.am_implied, 2),
             0xe9: (self.sbc, self.am_immediate, 2),
             0xea: (self.nop, self.am_implied, 2),
-            # 0xeb: (self.cpx, self.am_absolute, 4),
+            0xeb: (self.sbc, self.am_immediate, 2),
             0xec: (self.cpx, self.am_absolute, 4),
-            0xee: (self.inc, self.am_absolute, )
+            0xee: (self.inc, self.am_absolute, 6),
+            0xef: (self.isb, self.am_absolute, 6),
             0xed: (self.sbc, self.am_absolute, 4),
             0xf0: (self.beq, self.am_relative, 2),
             0xf1: (self.sbc, self.am_indirect_indexed, 5),
+            0xf3: (self.isb, self.am_indirect_indexed, 8),
+            0xf4: (self.nop, self.am_zero_page_x, 4),
             0xf5: (self.sbc, self.am_zero_page_x, 4),
             0xf6: (self.inc, self.am_zero_page_x, 6),
+            0xf7: (self.isb, self.am_zero_page_x, 6),
             0xf8: (self.sed, self.am_implied, 2),
             0xf9: (self.sbc, self.am_absolute_y, 4),
+            0xfa: (self.nop, self.am_implied, 2),
+            0xfb: (self.isb, self.am_absolute_y, 7),
+            0xfc: (self.nop, self.am_absolute_x, 4),
             0xfd: (self.sbc, self.am_absolute_x, 4),
-            0xfe: (self.inc, self.am_absolute_x, 7)
+            0xfe: (self.inc, self.am_absolute_x, 7),
+            0xff: (self.isb, self.am_absolute_x, 7)
         }
 
     def info(self):
@@ -378,7 +455,7 @@ class Cpu(object):
     def _am_zero_page_index(self, idx_val):
         address = self.m_read(self.pc.value)
         self.pc.value += 1
-        return u16n(address + idx_val)
+        return u8n(address + idx_val)
 
     # d,x
     def am_zero_page_x(self):
@@ -424,11 +501,11 @@ class Cpu(object):
     def am_indirect(self):
         high = self.m_read(u16n(self.pc.value + 1))
         low = self.m_read(self.pc.value)
-        ah = make_u16(high, low)
-        al = make_u16(high, u8n(low + 1))
+        al = make_u16(high, low)
+        ah = make_u16(high, u8n(low + 1))
         h_high = self.m_read(ah)
         l_low = self.m_read(al)
-        make_u16(h_high, l_low)
+        return make_u16(h_high, l_low)
 
     # (d,x)
     # Pre-indexed indirect
@@ -443,10 +520,10 @@ class Cpu(object):
     # Post-indexed indirect
     def am_indirect_indexed(self):
         a1 = self.m_read(self.pc.value)
-        high = self.m_read(u16n(a1 + 1))
+        high = self.m_read(u8n(a1 + 1))
         low = self.m_read(a1)
         a2 = make_u16(high, low)
-        a2_idx = u8n(a2 + self.y.value)
+        a2_idx = u16n(a2 + self.y.value)
         # cross-page
         self.cycles += 0 if Cpu.same_page(a2, a2_idx) else 1
         self.pc.value += 1
@@ -714,7 +791,8 @@ class Cpu(object):
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
 
-    def nop(self):
+    # 兼容不同寻址方式
+    def nop(self, a=0):
         pass
 
     # logic inclusive or
@@ -870,3 +948,43 @@ class Cpu(object):
         self.acc.value = self.y.value
         self.test_and_set_negative(self.acc.value)
         self.test_and_set_zero(self.acc.value)
+
+    # unofficial opcodes
+    # see: http://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes
+    # mem -> a -> x
+    def lax(self, a):
+        self.lda(a)
+        self.tax()
+
+    # a & x -> mem
+    def sax(self, a):
+        self.m_write(a, u8n(self.acc.value & self.x.value))
+
+    # dec the value then cmp value
+    def dcp(self, a):
+        v = self.m_read(a)
+        v = u8n(v - 1)
+        self.m_write(a, v)
+        self._compare(self.acc.value, v)
+
+    # isb = inc + sbc, alse named 'isc'
+    def isb(self, a):
+        self.inc(a)
+        self.sbc(a)
+
+    # slo = asl + ora
+    def slo(self, a):
+        self.asl(a)
+        self.ora(a)
+
+    def rla(self, a):
+        self.rol(a)
+        self.and_(a)
+
+    def sre(self, a):
+        self.lsr(a)
+        self.eor(a)
+
+    def rra(self, a):
+        self.ror(a)
+        self.adc(a)

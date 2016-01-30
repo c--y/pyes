@@ -28,7 +28,8 @@ class Memory(object):
 
         elif (a & 0xf000) == 0x4000:
             # apu reg
-            pass
+            # TODO
+            return 0xff
 
         elif 0x8000 <= a <= 0xffff:
             # rom
@@ -59,11 +60,12 @@ class Memory(object):
             self.m.pads[1].write(v)
             self.cells[a] = v
             # apu
-            self.m.apu.reg_write(a, v)
+            # self.m.apu.reg_write(a, v)
 
         elif (a & 0xf000) == 0x4000:
             # write apu
-            self.m.apu.reg_write(a, v)
+            # self.m.apu.reg_write(a, v)
+            pass
 
         elif 0x8000 <= a <= 0xffff:
             # write rom

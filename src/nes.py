@@ -10,6 +10,7 @@
         1) up to 16kb vram
     6. apu
 """
+from apu import Apu
 from cpu import Cpu
 from ppu import Ppu
 from memory import Memory
@@ -23,6 +24,7 @@ class Machine(object):
         self.cpu = Cpu(self)
         self.memory = Memory(self)
         self.ppu = Ppu(self)
+        self.apu = Apu(self)
         self.pads = [JoyStick(self), JoyStick(self)]
         self.rom = None
 
