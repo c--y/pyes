@@ -116,6 +116,11 @@ class OamSprite(object):
 
 
 class PatternTable(object):
+    """
+    Tile graphics for background and sprites.
+    Each tile in the pattern table is 16 bytes, made of two planes.
+    The first plane controls bit 0 of the color; the second plane controls bit 1.
+    """
     def __init__(self, ppu):
         self.ppu = ppu
         # physical memory
@@ -128,6 +133,18 @@ class PatternTable(object):
 
     def write(self, a, v):
         pass
+
+    @staticmethod
+    def render_tile(tile_bytes):
+        assert len(tile_bytes) == 16
+        ret = [] * 8
+        for i in xrange(8):
+            ret.append([])
+            b0 = tile_bytes[i]
+            b1 = tile_bytes[8 + i]
+            for j in xrange(7, -1, -1):
+                ret[i].append((((b1 >> j) & 0x1) << 1) + ((b0 >> j) & 0x1))
+        return ret
 
 
 class NameTable(object):
@@ -207,3 +224,4 @@ class Ppu(object):
         self.r_status = _RStatus()
 
         # virtual devices
+        self.oam = ObjAttrMemory(self)
