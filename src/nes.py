@@ -34,9 +34,7 @@ class Machine(object):
         nes_rom = read_ines(file_path)
         self.rom = nes_rom.to_mapper()
 
-
     def run(self):
-
         while True:
             cycles = self.cpu.step()
             self.total_cycles += cycles
