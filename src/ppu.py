@@ -99,6 +99,7 @@ class _RStatus(object):
 class OamSprite(object):
     def __init__(self, four_bytes):
         assert len(four_bytes) == 4
+        self.bytes = four_bytes
         self.y = four_bytes[0]
         self.tile_index = four_bytes[1]
         attr = four_bytes[2]
@@ -119,8 +120,49 @@ class PatternTable(object):
         self.ppu = ppu
         # physical memory
         self.tables = [[]] * 2
-        # virtual memory
+        self.tables[0] = [0] * 4096
+        self.tables[1] = [0] * 4096
+
+    def read(self, a):
+        pass
+
+    def write(self, a, v):
+        pass
+
+
+class NameTable(object):
+    """
+        A nametable is a 1024 byte area of memory used by the PPU to lay out backgrounds.
+    Each byte in the nametable controls one 8x8 pixel character cell,
+    and each nametable has 30 rows of 32 tiles each,
+    for 960 ($3C0) bytes; the rest is used by each nametable's attribute table.
+        With each tile being 8x8 pixels, this makes a total of 256x240 pixels in one map,
+    the same size as one full screen.
+    """
+    def __init__(self, ppu):
+        self.ppu = ppu
+        # physical memory
+        self.tables = [[]] * 2
+        self.tables[0] = [0] * 1024
+        self.tables[1] = [0] * 1024
+        # virtual memory, mirroring
         self.virtual_tables = [[]] * 4
+
+    def read(self, a):
+        pass
+
+    def write(self, a, v):
+        pass
+
+
+class ObjAttrMemory(object):
+    """
+    OAM:
+        The OAM (Object Attribute Memory) is internal memory inside the PPU that contains a display list of up to 64 sprites,
+    where each sprite's information occupies 4 bytes.
+    """
+    def __init__(self):
+        self.oam = [OamSprite] * 64
 
     def read(self, a):
         pass
