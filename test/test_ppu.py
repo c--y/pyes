@@ -1,5 +1,5 @@
 # coding=utf-8
-from ppu import PatternTable
+from ppu import PatternTable, palettes
 
 
 def test_pattern_table_render_tile():
